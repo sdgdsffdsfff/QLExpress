@@ -17,15 +17,36 @@ public class OperatorSelfDefineClassFunction extends OperatorBase implements Can
   Class<?>[] parameterClasses ;
   Class<?> operClass;
   Object operInstance;
-  transient Method method;
+  Method method;
   boolean isReturnVoid;
   boolean maybeDynamicParams;
+    
+  public OperatorSelfDefineClassFunction(String aOperName,Class<?> aOperClass, String aFunctionName,
+                                           Class<?>[] aParameterClassTypes,String[] aParameterDesc,String[] aParameterAnnotation,String aErrorInfo) throws Exception {
+        if (errorInfo != null && errorInfo.trim().length() == 0) {
+            errorInfo = null;
+        }
+        this.name = aOperName;
+        this.errorInfo = aErrorInfo;
+        this.functionName = aFunctionName;
+        this.parameterClasses = aParameterClassTypes;
+        this.parameterTypes = new String[aParameterClassTypes.length];
+        this.operDataDesc = aParameterDesc;
+        this.operDataAnnotation = aParameterAnnotation;
+        for(int i=0;i<this.parameterClasses.length;i++){
+            this.parameterTypes[i] = this.parameterClasses[i].getName();
+        }
+        operClass = aOperClass;
+        method = operClass.getMethod(functionName,parameterClasses);
+        this.isReturnVoid = method.getReturnType().equals(void.class);
+        this.maybeDynamicParams = DynamicParamsUtil.maybeDynamicParams(parameterClasses);
+    }
 
   public OperatorSelfDefineClassFunction(String aOperName,String aClassName, String aFunctionName,
           Class<?>[] aParameterClassTypes,String[] aParameterDesc,String[] aParameterAnnotation,String aErrorInfo) throws Exception {
 		if (errorInfo != null && errorInfo.trim().length() == 0) {
 			errorInfo = null;
-		}
+		} 
 		this.name = aOperName;
 	    this.errorInfo = aErrorInfo;
 	    this.functionName = aFunctionName;
@@ -46,7 +67,7 @@ public class OperatorSelfDefineClassFunction extends OperatorBase implements Can
                          String[] aParameterTypes,String[] aParameterDesc,String[] aParameterAnnotation,String aErrorInfo) throws Exception {
 	if (errorInfo != null && errorInfo.trim().length() == 0) {
 			errorInfo = null;
-	}
+	} 
 	this.name = aOperName;
     this.errorInfo = aErrorInfo;
     this.functionName = aFunctionName;
@@ -73,13 +94,13 @@ public class OperatorSelfDefineClassFunction extends OperatorBase implements Can
   public OperateData executeInner(InstructionSetContext context, ArraySwap list) throws Exception {
       Object[] parameres = DynamicParamsUtil.transferDynamicParams(context, list, parameterClasses,this.maybeDynamicParams);
       Object obj = null;
-      if( Modifier.isStatic(this.getMethod().getModifiers())){
-         obj = this.getMethod().invoke(null,ExpressUtil.transferArray(parameres,parameterClasses));
+      if( Modifier.isStatic(this.method.getModifiers())){
+         obj = this.method.invoke(null,ExpressUtil.transferArray(parameres,parameterClasses));
       }else{
 		  if(operInstance==null){
 			  operInstance =  operClass.newInstance();
 		  }
-    	 obj = this.getMethod().invoke(operInstance,ExpressUtil.transferArray(parameres,parameterClasses));
+    	 obj = this.method.invoke(operInstance,ExpressUtil.transferArray(parameres,parameterClasses));
       }
 
       if(obj != null){
@@ -88,17 +109,8 @@ public class OperatorSelfDefineClassFunction extends OperatorBase implements Can
       if(this.isReturnVoid == true){
     	  return OperateDataCacheManager.fetchOperateDataAttr("null", void.class);
       }else{
-    	  return OperateDataCacheManager.fetchOperateDataAttr("null", null);
+    	  return OperateDataCacheManager.fetchOperateDataAttr("null", null);  
       }
-  }
-  
-  private Method getMethod() throws NoSuchMethodException {
-      
-      if(this.method!=null){
-          return this.method;
-      }
-      this.method = operClass.getMethod(functionName,parameterClasses);
-      return this.method;
   }
 
 

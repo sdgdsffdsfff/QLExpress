@@ -38,7 +38,7 @@ public class InstructionSet implements Serializable{
 	public static String TYPE_FUNCTION ="function";
 	public static String TYPE_MARCO ="marco";
 	
-	public static boolean printInstructionError = true;
+	public static boolean printInstructionError = false;
 	
 	
 	private String type ="main";
@@ -82,6 +82,19 @@ public class InstructionSet implements Serializable{
 	  return result.keySet().toArray(new String[0]);
 
   }
+    
+    public String[] getVirClasses() throws Exception {
+        Map<String,String> result = new TreeMap<String,String>();
+        for (int i = 0; i < instructionList.length; i++) {
+            Instruction instruction = instructionList[i];
+            if (instruction instanceof InstructionNewVirClass) {
+                String functionName = ((InstructionNewVirClass)instruction).getClassName();
+                result.put(functionName, null);
+            }
+        }
+        return result.keySet().toArray(new String[0]);
+        
+    }
   public String[] getOutAttrNames() throws Exception{
 	  Map<String,String> result = new TreeMap<String,String>();
 	  for(Instruction instruction:instructionList){
@@ -99,17 +112,19 @@ public class InstructionSet implements Serializable{
 			if (instruction instanceof InstructionOperator) {
 				String opName = ((InstructionOperator) instruction)
 						.getOperator().getName();
-				if (opName.equalsIgnoreCase("def")
-						|| opName.equalsIgnoreCase("exportDef")) {
-					String varLocalName = (String) ((InstructionConstData) instructionList[i - 1])
-							.getOperateData().getObject(null);
-					result.remove(varLocalName);
-				} else if (opName.equalsIgnoreCase("alias")
-						|| opName.equalsIgnoreCase("exportAlias")) {
-					String varLocalName = (String) ((InstructionConstData) instructionList[i - 2])
-							.getOperateData().getObject(null);
-					result.remove(varLocalName);
-				}
+				if(opName != null){//addOperator(op)中op.name有可能为空
+                    if (opName.equalsIgnoreCase("def")
+                            || opName.equalsIgnoreCase("exportDef")) {
+                        String varLocalName = (String) ((InstructionConstData) instructionList[i - 1])
+                                .getOperateData().getObject(null);
+                        result.remove(varLocalName);
+                    } else if (opName.equalsIgnoreCase("alias")
+                            || opName.equalsIgnoreCase("exportAlias")) {
+                        String varLocalName = (String) ((InstructionConstData) instructionList[i - 2])
+                                .getOperateData().getObject(null);
+                        result.remove(varLocalName);
+                    }
+                }
 			}
 		}
 	  return result.keySet().toArray(new String[0]);
